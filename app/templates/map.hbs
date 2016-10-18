@@ -1,0 +1,8 @@
+<div class="leaflet-container">
+{{#leaflet-map onLoad="loadMap" onClick="showObjectDescription" lat=lat lng=lng zoom=zoom as |layers|}}
+
+  {{layers.tile url="http://{s}.tile.osm.org/{z}/{x}/{y}.png"}}
+
+{{/leaflet-map}}
+</div>
+{{outlet}}
