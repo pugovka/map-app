@@ -7,13 +7,28 @@ export default Ember.Controller.extend({
   zoom: 17,
   actions: {
     loadMap: function(map) {
+      // Get leaflet map object
       this.set('map', map.target);
-
       const currentMapObject = this.get('map');
+      const currentCoords = this.model;
+
+      // Set current map view if coords passed by url
+      if (!(Object.keys(currentCoords).length === 0 && currentCoords.constructor === Object)) {
+        currentMapObject.setView(L.latLng(currentCoords.lat, currentCoords.lng));
+      }
+
+      currentMapObject.on('moveend', (e) => {
+        const mapCurrentCenter = currentMapObject.getCenter();
+
+        // Set coords to an address bar
+        window.history.pushState(
+          'Set new coords', '', '/map/' + mapCurrentCenter.lat + '/' + mapCurrentCenter.lng
+        );
+      });
 
       $.ajax({
         type: 'GET',
-        url: "/api/geo-objects",
+        url: "/geo-objects",
         success: function(geoObjects) {
           L.geoJson(geoObjects.data[0].attributes.features, {
             style: () => {
@@ -22,7 +37,26 @@ export default Ember.Controller.extend({
               }
             },
             onEachFeature: (feature, layer) => {
-             layer.bindPopup(feature.properties.tags.name || feature.properties.tags['addr:street'] || 'no name');
+              layer.bindPopup(
+                feature.properties.tags.name ||
+                feature.properties.tags['addr:street'] + ' ' + feature.properties.tags['addr:housenumber']
+               );
+              layer.on('click', () => {
+                const mapCurrentCenter = currentMapObject.getCenter();
+
+                // Set the id to an address bar
+                window.history.pushState(
+                  'Set object id',
+                  '',
+                  '/map/' + mapCurrentCenter.lat + '/' + mapCurrentCenter.lng + '/' + feature.properties.id
+                );
+
+                // Show object description in a sidebar
+                $('.map-object-description')
+                  .text(JSON.stringify(feature.properties))
+                  .addClass('map-object-description--open');
+                $('.map').addClass('map--scrolled');
+              });
             }
           }).addTo(currentMapObject);
         }
@@ -31,11 +65,20 @@ export default Ember.Controller.extend({
       });
     },
 
-    showObjectDescription(e) {
-      const popup = L.popup()
-        .setLatLng(e.latlng)
-        .setContent('<p>' + e.latlng.lat + ' ' + e.latlng.lng + '</p>')
-        .openOn(this.get('map'));
+    clickOnEmptyArea() {
+      const $mapObjectDescription = $('.map-object-description');
+      const $map = $('.map');
+
+      // Hide sidebar and clear text data
+      if ($mapObjectDescription.hasClass('map-object-description--open')) {
+        $mapObjectDescription
+          .text('')
+          .removeClass('map-object-description--open');
+      }
+
+      if ($map.hasClass('map--scrolled')) {
+        $map.removeClass('map--scrolled');
+      }
     }
   }
 });

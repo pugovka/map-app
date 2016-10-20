@@ -9,3 +9,26 @@ body,
 body {
   margin: 0;
 }
+
+.map {
+  width: 100%;
+  height: 100%;
+}
+
+.map--scrolled {
+  float: right;
+  width: 60%;
+}
+
+.map-object-description {
+  position: absolute;
+  width: 40%;
+  top: 0;
+  bottom: 0;
+  background-color: white;
+  left: -40%;
+}
+
+.map-object-description--open {
+  left: 0;
+}
