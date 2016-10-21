@@ -11,7 +11,7 @@ Router.map(function() {
   // Route with coords
   this.route('map', { path: '/map/:lat/:lng/' });
   // Route with coords and object id
-  this.route('map', { path: '/map/:lat/:lng/:id' });
+  this.route('map', { path: '/map/:lat/:lng/:objectId' });
 });
 
 export default Router;

@@ -12,20 +12,23 @@ export default Ember.Controller.extend({
       // Get leaflet map object
       this.set('map', map.target);
       const currentMapObject = this.get('map');
-      const currentCoords = this.model;
+      const mapData = this.model;
 
       // Set current map view if coords passed by url
-      if (!(Object.keys(currentCoords).length === 0 && currentCoords.constructor === Object)) {
-        currentMapObject.setView(L.latLng(currentCoords.lat, currentCoords.lng));
+      if (!(Object.keys(mapData).length === 0 && mapData.constructor === Object)) {
+        currentMapObject.setView(L.latLng(mapData.lat, mapData.lng));
       }
 
       currentMapObject.on('moveend', () => {
         const mapCurrentCenter = currentMapObject.getCenter();
+        const newUrl = (mapData.objectId) ?
+          '/map/' + mapCurrentCenter.lat + '/' + mapCurrentCenter.lng + '/' + mapData.objectId:
+          '/map/' + mapCurrentCenter.lat + '/' + mapCurrentCenter.lng;
 
-        // Set coords to an address bar
-        window.history.pushState(
-          'Set new coords', '', '/map/' + mapCurrentCenter.lat + '/' + mapCurrentCenter.lng
-        );
+        if (newUrl !== window.location.pathname) {
+          // Set coords to an address bar
+          window.history.pushState('Set new coords', '', newUrl);
+        }
       });
 
       Ember.$.get({
