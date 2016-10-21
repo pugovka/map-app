@@ -1,6 +1,8 @@
+/* globals L */
 import Ember from 'ember';
 
 export default Ember.Controller.extend({
+
   // Set map center
   lat: 43.15440864546931,
   lng: 131.9187426567078,
@@ -17,7 +19,7 @@ export default Ember.Controller.extend({
         currentMapObject.setView(L.latLng(currentCoords.lat, currentCoords.lng));
       }
 
-      currentMapObject.on('moveend', (e) => {
+      currentMapObject.on('moveend', () => {
         const mapCurrentCenter = currentMapObject.getCenter();
 
         // Set coords to an address bar
@@ -26,15 +28,14 @@ export default Ember.Controller.extend({
         );
       });
 
-      $.ajax({
-        type: 'GET',
+      Ember.$.get({
         url: "/geo-objects",
         success: function(geoObjects) {
           L.geoJson(geoObjects.data[0].attributes.features, {
             style: () => {
               return {
                 "color": "#008000"
-              }
+              };
             },
             onEachFeature: (feature, layer) => {
               layer.bindPopup(
@@ -52,28 +53,31 @@ export default Ember.Controller.extend({
                 );
 
                 // Show object description in a sidebar
-                $('.map-object-description')
-                  .text(JSON.stringify(feature.properties))
-                  .addClass('map-object-description--open');
-                $('.map').addClass('map--scrolled');
+                Ember.$('.map-object-description')
+                  .addClass('map-object-description--open')
+                  .find('.map-object-description__inner')
+                  .text(JSON.stringify(feature.properties));
+                Ember.$('.map').addClass('map--scrolled');
               });
             }
           }).addTo(currentMapObject);
+        },
+        error: function() {
+          throw new Error('Invalid geo data');
         }
-      }).error(function() {
-        throw new Error('Invalid geo data');
       });
     },
 
     clickOnEmptyArea() {
-      const $mapObjectDescription = $('.map-object-description');
-      const $map = $('.map');
+      const $mapObjectDescription = Ember.$('.map-object-description');
+      const $map = Ember.$('.map');
 
       // Hide sidebar and clear text data
       if ($mapObjectDescription.hasClass('map-object-description--open')) {
         $mapObjectDescription
-          .text('')
-          .removeClass('map-object-description--open');
+          .removeClass('map-object-description--open')
+          .find('.map-object-description__inner')
+          .text('');
       }
 
       if ($map.hasClass('map--scrolled')) {
