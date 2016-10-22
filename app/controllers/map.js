@@ -14,25 +14,22 @@ export default Ember.Controller.extend({
       this.set('map', map.target);
       const currentMapObject = this.get('map');
       const mapData = this.model;
+      let currentObjectId = mapData.map_object_id;
 
       // Set current map view if coords passed by url
       if (!(Object.keys(mapData).length === 0 && mapData.constructor === Object)) {
         currentMapObject.setView(L.latLng(mapData.map_lat, mapData.map_lng));
-        //openSidebar();
       }
 
       currentMapObject.on('moveend', () => {
-        const mapCurrentCenter = currentMapObject.getCenter();
-        const newUrl = (mapData.map_object_id) ?
-          '/map/' + mapCurrentCenter.lat + '/' + mapCurrentCenter.lng + '/' + mapData.map_object_id:
-          '/map/' + mapCurrentCenter.lat + '/' + mapCurrentCenter.lng;
-
-        if (newUrl !== window.location.pathname) {
-          // Set coords to an address bar
-          window.history.pushState('Set new coords', '', newUrl);
+        if (currentObjectId) {
+          setUrl(currentMapObject.getCenter(), currentObjectId);
+        } else {
+          setUrl(currentMapObject.getCenter());
         }
       });
 
+      // Get map objects
       Ember.$.get({
         url: "/geo-objects",
         success: function(geoObjects) {
@@ -54,15 +51,8 @@ export default Ember.Controller.extend({
                );
 
               layer.on('click', () => {
-                const mapCurrentCenter = currentMapObject.getCenter();
-
-                // Set the id to an address bar
-                window.history.pushState(
-                  'Set object id',
-                  '',
-                  '/map/' + mapCurrentCenter.lat + '/' + mapCurrentCenter.lng + '/' + feature.properties.id
-                );
-
+                currentObjectId = feature.properties.id;
+                setUrl(currentMapObject.getCenter(), currentObjectId);
                 openSidebarWithObjectDescription(feature);
               });
             }
@@ -93,17 +83,27 @@ export default Ember.Controller.extend({
         $mapContainer.removeClass('map--scrolled');
       }
 
-      setUrl(this.map);
+      setUrl(this.map.getCenter());
     }
   }
 });
 
-// Set coords to an address bar
-const setUrl = (map) => {
+
+const createUrl = (coordinates, objectId) => {
   'use strict';
-  const mapCenter = map.getCenter();
-  const newUrl = '/map/' + mapCenter.lat + '/' + mapCenter.lng;
-  window.history.pushState('Set new coords', '', newUrl);
+  return (objectId) ?
+    '/map/' + coordinates.lat + '/' + coordinates.lng + '/' + objectId :
+    '/map/' + coordinates.lat + '/' + coordinates.lng;
+};
+
+// Set coords to an address bar
+const setUrl = (coordinates, objectId) => {
+  'use strict';
+
+  const newUrl = createUrl(coordinates, objectId);
+  if (newUrl !== window.location.pathname) {
+    window.history.pushState('Set new coords', '', newUrl);
+  }
 };
 
 const openSidebarWithObjectDescription = (geoObject) => {
