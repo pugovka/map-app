@@ -3,9 +3,6 @@
 var EmberApp = require('ember-cli/lib/broccoli/ember-app');
 
 module.exports = function(defaults) {
-  var app = new EmberApp(defaults, {
-    // Add options here
-  });
 
   var app = new EmberApp(defaults, {
   // Add options here
@@ -20,6 +17,8 @@ module.exports = function(defaults) {
   }
 });
 
+app.import('bower_components/jquery/dist/jquery.min.js');
+app.import('bower_components/leaflet/dist/leaflet.js');
 
   // Use `app.import` to add additional libraries to the generated
   // output files.

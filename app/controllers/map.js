@@ -2,13 +2,14 @@
 import Ember from 'ember';
 
 export default Ember.Controller.extend({
-
   // Set map center
   lat: 43.15440864546931,
   lng: 131.9187426567078,
   zoom: 17,
   actions: {
     loadMap: function(map) {
+      'use strict';
+
       // Get leaflet map object
       this.set('map', map.target);
       const currentMapObject = this.get('map');
@@ -17,6 +18,7 @@ export default Ember.Controller.extend({
       // Set current map view if coords passed by url
       if (!(Object.keys(mapData).length === 0 && mapData.constructor === Object)) {
         currentMapObject.setView(L.latLng(mapData.lat, mapData.lng));
+        //openSidebar();
       }
 
       currentMapObject.on('moveend', () => {
@@ -41,10 +43,16 @@ export default Ember.Controller.extend({
               };
             },
             onEachFeature: (feature, layer) => {
+              // Open sidebar if object id passed by url
+              if (mapData.objectId && (parseInt(mapData.objectId) === parseInt(feature.properties.id))) {
+                openSidebarWithObjectDescription(feature);
+              }
+
               layer.bindPopup(
                 feature.properties.tags.name ||
                 feature.properties.tags['addr:street'] + ' ' + feature.properties.tags['addr:housenumber']
                );
+
               layer.on('click', () => {
                 const mapCurrentCenter = currentMapObject.getCenter();
 
@@ -55,12 +63,7 @@ export default Ember.Controller.extend({
                   '/map/' + mapCurrentCenter.lat + '/' + mapCurrentCenter.lng + '/' + feature.properties.id
                 );
 
-                // Show object description in a sidebar
-                Ember.$('.map-object-description')
-                  .addClass('map-object-description--open')
-                  .find('.map-object-description__inner')
-                  .text(JSON.stringify(feature.properties));
-                Ember.$('.map').addClass('map--scrolled');
+                openSidebarWithObjectDescription(feature);
               });
             }
           }).addTo(currentMapObject);
@@ -72,8 +75,10 @@ export default Ember.Controller.extend({
     },
 
     clickOnEmptyArea() {
+      'use strict';
+
       const $mapObjectDescription = Ember.$('.map-object-description');
-      const $map = Ember.$('.map');
+      const $mapContainer = Ember.$('.map');
 
       // Hide sidebar and clear text data
       if ($mapObjectDescription.hasClass('map-object-description--open')) {
@@ -83,9 +88,30 @@ export default Ember.Controller.extend({
           .text('');
       }
 
-      if ($map.hasClass('map--scrolled')) {
-        $map.removeClass('map--scrolled');
+      // Return map container width
+      if ($mapContainer.hasClass('map--scrolled')) {
+        $mapContainer.removeClass('map--scrolled');
       }
+
+      setUrl(this.map);
     }
   }
 });
+
+// Set coords to an address bar
+const setUrl = (map) => {
+  'use strict';
+  const mapCenter = map.getCenter();
+  const newUrl = '/map/' + mapCenter.lat + '/' + mapCenter.lng;
+  window.history.pushState('Set new coords', '', newUrl);
+};
+
+const openSidebarWithObjectDescription = (geoObject) => {
+  'use strict';
+  Ember.$('.map-object-description')
+    .addClass('map-object-description--open')
+    .find('.map-object-description__inner')
+    .text(JSON.stringify(geoObject.properties));
+
+  Ember.$('.map').addClass('map--scrolled');
+};
