@@ -17,14 +17,14 @@ export default Ember.Controller.extend({
 
       // Set current map view if coords passed by url
       if (!(Object.keys(mapData).length === 0 && mapData.constructor === Object)) {
-        currentMapObject.setView(L.latLng(mapData.lat, mapData.lng));
+        currentMapObject.setView(L.latLng(mapData.map_lat, mapData.map_lng));
         //openSidebar();
       }
 
       currentMapObject.on('moveend', () => {
         const mapCurrentCenter = currentMapObject.getCenter();
-        const newUrl = (mapData.objectId) ?
-          '/map/' + mapCurrentCenter.lat + '/' + mapCurrentCenter.lng + '/' + mapData.objectId:
+        const newUrl = (mapData.map_object_id) ?
+          '/map/' + mapCurrentCenter.lat + '/' + mapCurrentCenter.lng + '/' + mapData.map_object_id:
           '/map/' + mapCurrentCenter.lat + '/' + mapCurrentCenter.lng;
 
         if (newUrl !== window.location.pathname) {
@@ -44,7 +44,7 @@ export default Ember.Controller.extend({
             },
             onEachFeature: (feature, layer) => {
               // Open sidebar if object id passed by url
-              if (mapData.objectId && (parseInt(mapData.objectId) === parseInt(feature.properties.id))) {
+              if (mapData.map_object_id && (parseInt(mapData.map_object_id) === parseInt(feature.properties.id))) {
                 openSidebarWithObjectDescription(feature);
               }
 

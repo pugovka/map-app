@@ -7,11 +7,11 @@ const Router = Ember.Router.extend({
 });
 
 Router.map(function() {
-  this.route('map');
-  // Route with coords
-  this.route('map', { path: '/map/:lat/:lng/' });
   // Route with coords and object id
-  this.route('map', { path: '/map/:lat/:lng/:objectId' });
+  this.route('map', { path: '/map/:map_lat/:map_lng/:map_object_id' });
+  // Route with coords
+  this.route('map', { path: '/map/:map_lat/:map_lng/' });
+  this.route('map');
 });
 
 export default Router;
