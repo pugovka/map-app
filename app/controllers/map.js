@@ -16,12 +16,14 @@ export default Ember.Controller.extend({
       self.set('map', map.target);
       const currentMapObject = self.get('map');
       const mapData = self.model;
+      const defaultStyle = { color: '#f6f19b' };
+      const hoverStyle = { color: '#008000' }
 
       //Restore object id from model
       self.setCurrentObjectId(mapData.map_object_id);
 
       // Set current map view if coords passed by url
-      if (!(Object.keys(mapData).length === 0 && mapData.constructor === Object)) {
+      if (self.notEmpty(mapData)) {
         currentMapObject.setView(L.latLng(mapData.map_lat, mapData.map_lng));
       } else {
         self.setUrl(currentMapObject.getCenter());
@@ -92,7 +94,7 @@ export default Ember.Controller.extend({
   },
 
   setCurrentObjectId(value) {
-    this.currentObjectId = value;
+    this.currentObjectId = parseInt(value);
   },
 
   createUrl(coordinates, objectId) {
@@ -120,4 +122,12 @@ export default Ember.Controller.extend({
 
     Ember.$('.map').addClass('map--scrolled');
   },
+
+  notEmpty(object) {
+    if (Object.keys(object).length === 0 && object.constructor === Object) {
+      return false;
+    }
+    return true;
+  }
+
 });
