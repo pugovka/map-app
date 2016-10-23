@@ -7,13 +7,14 @@ export default Ember.Controller.extend({
   lng: 131.9187426567078,
   zoom: 17,
   actions: {
-    loadMap: function(map) {
+    loadMap(map) {
       'use strict';
 
+      const self = this;
       // Get leaflet map object
-      this.set('map', map.target);
-      const currentMapObject = this.get('map');
-      const mapData = this.model;
+      self.set('map', map.target);
+      const currentMapObject = self.get('map');
+      const mapData = self.model;
       let currentObjectId = mapData.map_object_id;
 
       // Set current map view if coords passed by url
@@ -23,9 +24,9 @@ export default Ember.Controller.extend({
 
       currentMapObject.on('moveend', () => {
         if (currentObjectId) {
-          setUrl(currentMapObject.getCenter(), currentObjectId);
+          self.setUrl(currentMapObject.getCenter(), currentObjectId);
         } else {
-          setUrl(currentMapObject.getCenter());
+          self.setUrl(currentMapObject.getCenter());
         }
       });
 
@@ -42,7 +43,7 @@ export default Ember.Controller.extend({
             onEachFeature: (feature, layer) => {
               // Open sidebar if object id passed by url
               if (mapData.map_object_id && (parseInt(mapData.map_object_id) === parseInt(feature.properties.id))) {
-                openSidebarWithObjectDescription(feature);
+                self.openSidebarWithObjectDescription(feature);
               }
 
               layer.bindPopup(
@@ -52,8 +53,8 @@ export default Ember.Controller.extend({
 
               layer.on('click', () => {
                 currentObjectId = feature.properties.id;
-                setUrl(currentMapObject.getCenter(), currentObjectId);
-                openSidebarWithObjectDescription(feature);
+                self.setUrl(currentMapObject.getCenter(), currentObjectId);
+                self.openSidebarWithObjectDescription(feature);
               });
             }
           }).addTo(currentMapObject);
@@ -83,35 +84,34 @@ export default Ember.Controller.extend({
         $mapContainer.removeClass('map--scrolled');
       }
 
-      setUrl(this.map.getCenter());
+      this.setUrl(this.map.getCenter());
     }
-  }
+  },
+
+  createUrl(coordinates, objectId) {
+    'use strict';
+    return (objectId) ?
+      '/map/' + coordinates.lat + '/' + coordinates.lng + '/' + objectId :
+      '/map/' + coordinates.lat + '/' + coordinates.lng;
+  },
+
+  // Set coords to an address bar
+  setUrl(coordinates, objectId) {
+    'use strict';
+
+    const newUrl = this.createUrl(coordinates, objectId);
+    if (newUrl !== window.location.pathname) {
+      window.history.pushState('Set new coords', '', newUrl);
+    }
+  },
+
+  openSidebarWithObjectDescription(geoObject) {
+    'use strict';
+    Ember.$('.map-object-description')
+      .addClass('map-object-description--open')
+      .find('.map-object-description__inner')
+      .text(JSON.stringify(geoObject.properties));
+
+    Ember.$('.map').addClass('map--scrolled');
+  },
 });
-
-
-const createUrl = (coordinates, objectId) => {
-  'use strict';
-  return (objectId) ?
-    '/map/' + coordinates.lat + '/' + coordinates.lng + '/' + objectId :
-    '/map/' + coordinates.lat + '/' + coordinates.lng;
-};
-
-// Set coords to an address bar
-const setUrl = (coordinates, objectId) => {
-  'use strict';
-
-  const newUrl = createUrl(coordinates, objectId);
-  if (newUrl !== window.location.pathname) {
-    window.history.pushState('Set new coords', '', newUrl);
-  }
-};
-
-const openSidebarWithObjectDescription = (geoObject) => {
-  'use strict';
-  Ember.$('.map-object-description')
-    .addClass('map-object-description--open')
-    .find('.map-object-description__inner')
-    .text(JSON.stringify(geoObject.properties));
-
-  Ember.$('.map').addClass('map--scrolled');
-};
