@@ -51,11 +51,6 @@ export default Ember.Controller.extend({
                 self.openSidebarWithObjectDescription(feature);
               }
 
-              layer.bindPopup(
-                feature.properties.tags.name ||
-                feature.properties.tags['addr:street'] + ' ' + feature.properties.tags['addr:housenumber']
-               );
-
               layer.on('click', () => {
                 self.setCurrentObjectId(feature.properties.id);
                 self.setUrl(currentMapObject.getCenter(), self.currentObjectId);
