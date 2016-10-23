@@ -6,6 +6,7 @@ export default Ember.Controller.extend({
   lat: 43.15440864546931,
   lng: 131.9187426567078,
   zoom: 17,
+  currentObjectId: undefined,
   actions: {
     loadMap(map) {
       'use strict';
@@ -15,16 +16,20 @@ export default Ember.Controller.extend({
       self.set('map', map.target);
       const currentMapObject = self.get('map');
       const mapData = self.model;
-      let currentObjectId = mapData.map_object_id;
+
+      //Restore object id from model
+      self.setCurrentObjectId(mapData.map_object_id);
 
       // Set current map view if coords passed by url
       if (!(Object.keys(mapData).length === 0 && mapData.constructor === Object)) {
         currentMapObject.setView(L.latLng(mapData.map_lat, mapData.map_lng));
+      } else {
+        self.setUrl(currentMapObject.getCenter());
       }
 
       currentMapObject.on('moveend', () => {
-        if (currentObjectId) {
-          self.setUrl(currentMapObject.getCenter(), currentObjectId);
+        if (!!self.currentObjectId) {
+          self.setUrl(currentMapObject.getCenter(), self.currentObjectId);
         } else {
           self.setUrl(currentMapObject.getCenter());
         }
@@ -52,8 +57,8 @@ export default Ember.Controller.extend({
                );
 
               layer.on('click', () => {
-                currentObjectId = feature.properties.id;
-                self.setUrl(currentMapObject.getCenter(), currentObjectId);
+                self.setCurrentObjectId(feature.properties.id);
+                self.setUrl(currentMapObject.getCenter(), self.currentObjectId);
                 self.openSidebarWithObjectDescription(feature);
               });
             }
@@ -84,8 +89,15 @@ export default Ember.Controller.extend({
         $mapContainer.removeClass('map--scrolled');
       }
 
+      // Delete object id from url
       this.setUrl(this.map.getCenter());
+      // Unset object id
+      this.setCurrentObjectId(undefined);
     }
+  },
+
+  setCurrentObjectId(value) {
+    this.currentObjectId = value;
   },
 
   createUrl(coordinates, objectId) {
@@ -98,7 +110,6 @@ export default Ember.Controller.extend({
   // Set coords to an address bar
   setUrl(coordinates, objectId) {
     'use strict';
-
     const newUrl = this.createUrl(coordinates, objectId);
     if (newUrl !== window.location.pathname) {
       window.history.pushState('Set new coords', '', newUrl);
