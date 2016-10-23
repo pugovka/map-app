@@ -33,7 +33,7 @@ export default Ember.Controller.extend({
       // Get map objects
       Ember.$.get({
         url: "/geo-objects",
-        success: function(geoObjects) {
+        success(geoObjects) {
           L.geoJson(geoObjects.data[0].attributes.features, {
             style: () => {
               return {
@@ -59,7 +59,7 @@ export default Ember.Controller.extend({
             }
           }).addTo(currentMapObject);
         },
-        error: function() {
+        error() {
           throw new Error('Invalid geo data');
         }
       });
