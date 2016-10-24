@@ -82,8 +82,8 @@ export default Ember.Controller.extend({
                       geoJson.resetStyle(layerFromModel);
                     } else {
                       // Unset prev checked object style
-                      currentMapObject._layers[prevClickedLayerId].setStyle(defaultStyle);
-                      currentMapObject._layers[prevClickedLayerId].checked = false;
+                      geoJson.getLayer(prevClickedLayerId).setStyle(defaultStyle);
+                      geoJson.getLayer(prevClickedLayerId).checked = false;
                     }
                   }
 
@@ -92,7 +92,7 @@ export default Ember.Controller.extend({
                     weight: 5
                   });
                   layer.checked = true;
-                  prevClickedLayerId = this._leaflet_id;
+                  prevClickedLayerId = geoJson.getLayerId(layer);
                 } else {
                   layer.setStyle(hoverStyle);
                   layer.checked = false;
