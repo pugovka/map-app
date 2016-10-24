@@ -24,16 +24,18 @@ export default Ember.Controller.extend({
 
       // Set current map view if coords passed by url
       if (self.notEmpty(mapData)) {
-        currentMapObject.setView(L.latLng(mapData.map_lat, mapData.map_lng));
+        currentMapObject.setView(L.latLng(mapData.map_lat, mapData.map_lng), mapData.map_zoom, {
+          noMoveStart: true
+        });
       } else {
-        self.setUrl(currentMapObject.getCenter());
+        self.setUrl(currentMapObject.getCenter(), currentMapObject.getZoom());
       }
 
       currentMapObject.on('moveend', () => {
         if (!!self.currentObjectId) {
-          self.setUrl(currentMapObject.getCenter(), self.currentObjectId);
+          self.setUrl(currentMapObject.getCenter(), currentMapObject.getZoom(), self.currentObjectId);
         } else {
-          self.setUrl(currentMapObject.getCenter());
+          self.setUrl(currentMapObject.getCenter(), currentMapObject.getZoom());
         }
       });
 
@@ -66,7 +68,7 @@ export default Ember.Controller.extend({
 
               layer.on('click', function() {
                 self.setCurrentObjectId(feature.properties.id);
-                self.setUrl(currentMapObject.getCenter(), self.currentObjectId);
+                self.setUrl(currentMapObject.getCenter(), currentMapObject.getZoom(), self.currentObjectId);
                 self.openSidebarWithObjectDescription(feature);
 
                 if (!layer.checked) {
@@ -135,7 +137,7 @@ export default Ember.Controller.extend({
       }
 
       // Delete object id from url
-      this.setUrl(this.map.getCenter());
+      this.setUrl(this.map.getCenter(), this.map.getZoom());
       // Unset object id
       this.setCurrentObjectId(undefined);
     }
@@ -145,17 +147,17 @@ export default Ember.Controller.extend({
     this.currentObjectId = value;
   },
 
-  createUrl(coordinates, objectId) {
+  createUrl(coordinates, zoom, objectId) {
     'use strict';
     return (objectId) ?
-      '/map/' + coordinates.lat + '/' + coordinates.lng + '/' + objectId :
-      '/map/' + coordinates.lat + '/' + coordinates.lng;
+      '/map/' + coordinates.lat + '/' + coordinates.lng + '/' + zoom + '/' + objectId :
+      '/map/' + coordinates.lat + '/' + coordinates.lng + '/' + zoom;
   },
 
   // Set coords to an address bar
-  setUrl(coordinates, objectId) {
+  setUrl(coordinates, zoom, objectId) {
     'use strict';
-    const newUrl = this.createUrl(coordinates, objectId);
+    const newUrl = this.createUrl(coordinates, zoom, objectId);
     if (newUrl !== window.location.pathname) {
       window.history.pushState('Set new coords', '', newUrl);
     }
