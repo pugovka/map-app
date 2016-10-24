@@ -17,7 +17,7 @@ export default Ember.Controller.extend({
       const currentMapObject = self.get('map');
       const mapData = self.model;
       const defaultStyle = { color: '#f6f19b' };
-      const hoverStyle = { color: '#008000' }
+      const hoverStyle = { color: '#008000' };
 
       //Restore object id from model
       self.setCurrentObjectId(mapData.map_object_id);
@@ -40,27 +40,75 @@ export default Ember.Controller.extend({
       // Get map objects
       Ember.$.get({
         url: "/geo-objects",
+
         success(geoObjects) {
-          L.geoJson(geoObjects.data[0].attributes.features, {
-            style: () => {
-              return {
-                "color": "#008000"
-              };
+          let prevClickedLayerId;
+          let layerFromModel;
+
+          const geoJson = L.geoJson(geoObjects.data[0].attributes.features, {
+            nonBubblingEvents: ['click', 'mouseover', 'mouseout'],
+            style() {
+              return defaultStyle;
             },
-            onEachFeature: (feature, layer) => {
+
+            onEachFeature(feature, layer) {
               // Open sidebar if object id passed by url
               if (mapData.map_object_id && (parseInt(mapData.map_object_id) === parseInt(feature.properties.id))) {
                 self.openSidebarWithObjectDescription(feature);
+                layer.setStyle({ 
+                  color: '#ea7912',
+                  weight: 3
+                });
+                layer.checked = true;
+                prevClickedLayerId = 'from model';
+                layerFromModel = layer;
               }
 
-              layer.on('click', () => {
+              layer.on('click', function() {
                 self.setCurrentObjectId(feature.properties.id);
                 self.setUrl(currentMapObject.getCenter(), self.currentObjectId);
                 self.openSidebarWithObjectDescription(feature);
-              });
+
+                if (!layer.checked) {
+                  if (prevClickedLayerId) {
+                    if (prevClickedLayerId === 'from model') {
+                      geoJson.resetStyle(layerFromModel);
+                    } else {
+                      // Unset prev checked object style
+                      currentMapObject._layers[prevClickedLayerId].setStyle(defaultStyle);
+                      currentMapObject._layers[prevClickedLayerId].checked = false;
+                    }
+                  }
+
+                  layer.setStyle({ 
+                    color: '#ea7912',
+                    weight: 5
+                  });
+                  layer.checked = true;
+                  prevClickedLayerId = this._leaflet_id;
+                } else {
+                  layer.setStyle(hoverStyle);
+                  layer.checked = false;
+                }
+              })
+                .on('mouseover', function() {
+                  if (!layer.checked) {
+                    layer.setStyle(hoverStyle);
+                  } else {
+                    layer.setStyle({ weight: 5 });
+                  }
+                })
+                .on('mouseout', function() {
+                  if (!layer.checked) {
+                    layer.setStyle(defaultStyle);
+                  } else {
+                    layer.setStyle({ weight: 3 });
+                  }
+                });
             }
           }).addTo(currentMapObject);
         },
+
         error() {
           throw new Error('Invalid geo data');
         }
@@ -94,7 +142,7 @@ export default Ember.Controller.extend({
   },
 
   setCurrentObjectId(value) {
-    this.currentObjectId = parseInt(value);
+    this.currentObjectId = value;
   },
 
   createUrl(coordinates, objectId) {
