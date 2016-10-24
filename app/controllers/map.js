@@ -18,6 +18,7 @@ export default Ember.Controller.extend({
       const mapData = self.model;
       const defaultStyle = { color: '#f6f19b' };
       const hoverStyle = { color: '#008000' };
+      const featureGroup = L.featureGroup();
 
       //Restore object id from model
       self.setCurrentObjectId(mapData.map_object_id);
@@ -37,7 +38,10 @@ export default Ember.Controller.extend({
         } else {
           self.setUrl(currentMapObject.getCenter(), currentMapObject.getZoom());
         }
-      });
+      })
+        .on('click', () => {
+          self.clickOnEmptyArea(currentMapObject, featureGroup, defaultStyle);
+        });
 
       // Get map objects
       Ember.$.get({
@@ -54,6 +58,7 @@ export default Ember.Controller.extend({
             },
 
             onEachFeature(feature, layer) {
+              featureGroup.addLayer(layer);
               // Open sidebar if object id passed by url
               if (mapData.map_object_id && (parseInt(mapData.map_object_id) === parseInt(feature.properties.id))) {
                 self.openSidebarWithObjectDescription(feature);
@@ -116,31 +121,32 @@ export default Ember.Controller.extend({
         }
       });
     },
+  },
 
-    clickOnEmptyArea() {
-      'use strict';
+  clickOnEmptyArea(map, featureGroup, defaultStyle) {
+    'use strict';
 
-      const $mapObjectDescription = Ember.$('.map-object-description');
-      const $mapContainer = Ember.$('.map');
+    const $mapObjectDescription = Ember.$('.map-object-description');
+    const $mapContainer = Ember.$('.map');
 
-      // Hide sidebar and clear text data
-      if ($mapObjectDescription.hasClass('map-object-description--open')) {
-        $mapObjectDescription
-          .removeClass('map-object-description--open')
-          .find('.map-object-description__inner')
-          .text('');
-      }
-
-      // Return map container width
-      if ($mapContainer.hasClass('map--scrolled')) {
-        $mapContainer.removeClass('map--scrolled');
-      }
-
-      // Delete object id from url
-      this.setUrl(this.map.getCenter(), this.map.getZoom());
-      // Unset object id
-      this.setCurrentObjectId(undefined);
+    // Hide sidebar and clear text data
+    if ($mapObjectDescription.hasClass('map-object-description--open')) {
+      $mapObjectDescription
+        .removeClass('map-object-description--open')
+        .find('.map-object-description__inner')
+        .text('');
     }
+
+    // Restore map container width
+    if ($mapContainer.hasClass('map--scrolled')) {
+      $mapContainer.removeClass('map--scrolled');
+    }
+
+    // Delete object id from url
+    this.setUrl(map.getCenter(), map.getZoom());
+    // Unset object id
+    this.setCurrentObjectId(undefined);
+    featureGroup.setStyle(defaultStyle);
   },
 
   setCurrentObjectId(value) {
