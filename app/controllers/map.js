@@ -170,21 +170,50 @@ export default Ember.Controller.extend({
     }
   },
 
-  openSidebarWithObjectDescription(geoObject) {
+  openObjectDescription(geoObject) {
     'use strict';
+    const convertedObject = this.convertObjectDescription(geoObject.properties.tags);
+    let str = '';
+
+    for (let key in convertedObject) {
+      str +=
+        '<div class="map-object-description__field">' + key + '</div>' +
+        '<div class="map-object-description__field">' + convertedObject[key] + '</div>';
+    }
+
     Ember.$('.map-object-description')
       .addClass('map-object-description--open')
       .find('.map-object-description__inner')
-      .text(JSON.stringify(geoObject.properties));
+      .html(str);
 
     Ember.$('.map').addClass('map--scrolled');
   },
 
   notEmpty(object) {
+    'use strict';
     if (Object.keys(object).length === 0 && object.constructor === Object) {
       return false;
     }
     return true;
+  },
+
+  convertObjectDescription(objectTags) {
+    const convertedObject = {};
+    const dictionary = {
+      "id": "id",
+      "name": "name",
+      "addr:city": "city",
+      "addr:street": "street",
+      "addr:housenumber": "house number",
+      "addr:postcode": "postcode"
+    };
+
+    for (let key in objectTags) {
+      if (dictionary[key]) {
+        convertedObject[dictionary[key]] = objectTags[key];
+      }
+    };
+    return convertedObject;
   }
 
 });
