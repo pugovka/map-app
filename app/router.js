@@ -8,9 +8,9 @@ const Router = Ember.Router.extend({
 
 Router.map(function() {
   // Route with coords and object id
-  this.route('map', { path: '/map/:map_lat/:map_lng/:map_object_id' });
+  this.route('map', { path: '/map/:map_lat/:map_lng/:map_zoom/:map_object_id' });
   // Route with coords
-  this.route('map', { path: '/map/:map_lat/:map_lng/' });
+  this.route('map', { path: '/map/:map_lat/:map_lng/:map_zoom' });
   this.route('map');
 });
 
