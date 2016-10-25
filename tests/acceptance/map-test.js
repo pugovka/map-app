@@ -16,6 +16,10 @@ test('should display map', function(assert) {
   visit('/');
 
   andThen(function() {
-    assert.equal(mapExists('map'), true, 'map should be created');
+    const coordinates = {
+      lat: 43.15459257561516,
+      lng: 131.91977798938754
+    };
+    assert.equal(mapExists('leaflet-container', coordinates), true, 'map should be created');
   });
 });
