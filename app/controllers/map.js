@@ -6,7 +6,7 @@ export default Ember.Controller.extend({
   lat: 43.15440864546931,
   lng: 131.9187426567078,
   zoom: 17,
-  currentObjectId: undefined,
+  currentObjectId: null,
   actions: {
     loadMap(map) {
       'use strict';
@@ -25,25 +25,25 @@ export default Ember.Controller.extend({
       let geoJson = L.geoJson();
       let prevClickedLayerId;
 
-      //Restore object id from model
-      self.setCurrentObjectId(mapData.map_object_id);
-
-      // Set current map view if coords passed by url
       if (self.notEmpty(mapData)) {
+        // Set current map view if coords passed by url
         currentMapObject.setView(L.latLng(mapData.map_lat, mapData.map_lng), mapData.map_zoom, {
           noMoveStart: true
         });
+        //Restore object id from model
+        self.setCurrentObjectId(mapData.map_object_id);
       } else {
         self.setUrl(currentMapObject.getCenter(), currentMapObject.getZoom());
       }
 
-      currentMapObject.on('moveend', () => {
-        if (!!self.currentObjectId) {
-          self.setUrl(currentMapObject.getCenter(), currentMapObject.getZoom(), self.currentObjectId);
-        } else {
-          self.setUrl(currentMapObject.getCenter(), currentMapObject.getZoom());
-        }
-      })
+      currentMapObject
+        .on('moveend', () => {
+          if (self.currentObjectId) {
+            self.setUrl(currentMapObject.getCenter(), currentMapObject.getZoom(), self.currentObjectId);
+          } else {
+            self.setUrl(currentMapObject.getCenter(), currentMapObject.getZoom());
+          }
+        })
         .on('click', () => {
           self.closeObjectDescription(currentMapObject, geoJson, defaultStyle, prevClickedLayerId);
         });
@@ -72,30 +72,31 @@ export default Ember.Controller.extend({
                 prevClickedLayerId = geoJson.getLayerId(layer);
               }
 
-              layer.on('click', function() {
-                self.setCurrentObjectId(feature.properties.id);
-                self.setUrl(currentMapObject.getCenter(), currentMapObject.getZoom(), self.currentObjectId);
-                self.openObjectDescription(feature);
+              layer
+                .on('click', function() {
+                  self.setCurrentObjectId(feature.properties.id);
+                  self.setUrl(currentMapObject.getCenter(), currentMapObject.getZoom(), self.currentObjectId);
+                  self.openObjectDescription(feature);
 
-                if (!layer.checked) {
-                  if (prevClickedLayerId) {
-                    geoJson.getLayer(prevClickedLayerId).setStyle(defaultStyle);
-                    geoJson.getLayer(prevClickedLayerId).checked = false;
-                  }
+                  if (!layer.checked) {
+                    if (prevClickedLayerId) {
+                      geoJson.getLayer(prevClickedLayerId).setStyle(defaultStyle);
+                      geoJson.getLayer(prevClickedLayerId).checked = false;
+                    }
 
-                  layer.setStyle(clickedStyle);
-                  layer.checked = true;
-                  prevClickedLayerId = geoJson.getLayerId(layer);
-                } else {
-                  if (prevClickedLayerId) {
-                    // Unset prev checked object style
-                    geoJson.getLayer(prevClickedLayerId).setStyle(defaultStyle);
-                    geoJson.getLayer(prevClickedLayerId).checked = false;
+                    layer.setStyle(clickedStyle);
+                    layer.checked = true;
+                    prevClickedLayerId = geoJson.getLayerId(layer);
+                  } else {
+                    if (prevClickedLayerId) {
+                      // Unset prev checked object style
+                      geoJson.getLayer(prevClickedLayerId).setStyle(defaultStyle);
+                      geoJson.getLayer(prevClickedLayerId).checked = false;
+                    }
+                    self.closeObjectDescription(currentMapObject, geoJson, defaultStyle);
+                    layer.checked = false;
                   }
-                  self.closeObjectDescription(currentMapObject, geoJson, defaultStyle);
-                  layer.checked = false;
-                }
-              })
+                })
                 .on('mouseover', function() {
                   if (!layer.checked) {
                     layer.setStyle(hoverStyle);
@@ -111,42 +112,14 @@ export default Ember.Controller.extend({
                   }
                 });
             }
-          }).addTo(currentMapObject);
+          })
+          .addTo(currentMapObject);
         },
 
         error() {
           throw new Error('Invalid geo data');
         }
       });
-    },
-  },
-
-  closeObjectDescription(map, geoJson, defaultStyle, prevObjectId) {
-    'use strict';
-
-    const $mapObjectDescription = Ember.$('.map-object-description');
-    const $mapContainer = Ember.$('.map');
-
-    // Hide sidebar and clear text data
-    if ($mapObjectDescription.hasClass('map-object-description--open')) {
-      $mapObjectDescription
-        .removeClass('map-object-description--open')
-        .find('.map-object-description__inner')
-        .text('');
-    }
-
-    // Restore map container width
-    if ($mapContainer.hasClass('map--scrolled')) {
-      $mapContainer.removeClass('map--scrolled');
-    }
-
-    // Delete object id from url
-    this.setUrl(map.getCenter(), map.getZoom());
-    // Unset object id
-    this.setCurrentObjectId(undefined);
-    geoJson.setStyle(defaultStyle);
-    if (prevObjectId) {
-      geoJson.getLayer(prevObjectId).checked = false;
     }
   },
 
@@ -171,6 +144,14 @@ export default Ember.Controller.extend({
     }
   },
 
+  notEmpty(object) {
+    'use strict';
+    if (Object.keys(object).length === 0 && object.constructor === Object) {
+      return false;
+    }
+    return true;
+  },
+
   openObjectDescription(geoObject) {
     'use strict';
     const convertedObject = this.convertObjectDescription(geoObject.properties.tags);
@@ -186,26 +167,52 @@ export default Ember.Controller.extend({
       str = 'No description is provided';
     }
 
-    Ember.$('.map-object-description')
-      .addClass('map-object-description--open')
-      .find('.map-object-description__inner')
+    Ember.$('.map-sidebar')
+      .addClass('map-sidebar--open')
+      .find('.map-object-description')
       .html(str);
 
     Ember.$('.map').addClass('map--scrolled');
   },
 
-  notEmpty(object) {
+  closeObjectDescription(map, geoJson, defaultStyle, prevLayerId) {
     'use strict';
-    if (Object.keys(object).length === 0 && object.constructor === Object) {
-      return false;
+    // Delete object id from url
+    this.setUrl(map.getCenter(), map.getZoom());
+    // Unset object id
+    this.setCurrentObjectId(null);
+    geoJson.setStyle(defaultStyle);
+
+    if (prevLayerId) {
+      geoJson.getLayer(prevLayerId).checked = false;
     }
-    return true;
+
+    this.closeSidebar();
+  },
+
+  closeSidebar() {
+    'use strict';
+    const $mapSidebar = Ember.$('.map-sidebar');
+    const $mapContainer = Ember.$('.map');
+
+    // Hide sidebar and clear text data
+    if ($mapSidebar.hasClass('map-sidebar--open')) {
+      $mapSidebar
+        .removeClass('map-sidebar--open')
+        .find('.map-object-description')
+        .text('');
+    }
+
+    // Restore map container width
+    if ($mapContainer.hasClass('map--scrolled')) {
+      $mapContainer.removeClass('map--scrolled');
+    }
   },
 
   convertObjectDescription(objectTags) {
+    'use strict';
     const convertedObject = {};
     const dictionary = {
-      "id": "id",
       "name": "name",
       "addr:city": "city",
       "addr:street": "street",
