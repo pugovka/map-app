@@ -40,7 +40,7 @@ export default Ember.Controller.extend({
         }
       })
         .on('click', () => {
-          self.clickOnEmptyArea(currentMapObject, featureGroup, defaultStyle);
+          self.closeObjectDescription(currentMapObject, featureGroup, defaultStyle);
         });
 
       // Get map objects
@@ -61,7 +61,7 @@ export default Ember.Controller.extend({
               featureGroup.addLayer(layer);
               // Open sidebar if object id passed by url
               if (mapData.map_object_id && (parseInt(mapData.map_object_id) === parseInt(feature.properties.id))) {
-                self.openSidebarWithObjectDescription(feature);
+                self.openObjectDescription(feature);
                 layer.setStyle({ 
                   color: '#ea7912',
                   weight: 3
@@ -74,7 +74,7 @@ export default Ember.Controller.extend({
               layer.on('click', function() {
                 self.setCurrentObjectId(feature.properties.id);
                 self.setUrl(currentMapObject.getCenter(), currentMapObject.getZoom(), self.currentObjectId);
-                self.openSidebarWithObjectDescription(feature);
+                self.openObjectDescription(feature);
 
                 if (!layer.checked) {
                   if (prevClickedLayerId) {
@@ -94,7 +94,7 @@ export default Ember.Controller.extend({
                   layer.checked = true;
                   prevClickedLayerId = geoJson.getLayerId(layer);
                 } else {
-                  layer.setStyle(hoverStyle);
+                  self.closeObjectDescription(currentMapObject, featureGroup, defaultStyle);
                   layer.checked = false;
                 }
               })
@@ -123,7 +123,7 @@ export default Ember.Controller.extend({
     },
   },
 
-  clickOnEmptyArea(map, featureGroup, defaultStyle) {
+  closeObjectDescription(map, featureGroup, defaultStyle) {
     'use strict';
 
     const $mapObjectDescription = Ember.$('.map-object-description');
@@ -150,6 +150,7 @@ export default Ember.Controller.extend({
   },
 
   setCurrentObjectId(value) {
+    'use strict';
     this.currentObjectId = value;
   },
 
