@@ -16,9 +16,14 @@ export default Ember.Controller.extend({
       self.set('map', map.target);
       const currentMapObject = self.get('map');
       const mapData = self.model;
-      const defaultStyle = { color: '#f6f19b' };
+      const defaultStyle = { 
+        color: '#f6f19b',
+        weight: 3 
+      };
       const hoverStyle = { color: '#008000' };
-      const featureGroup = L.featureGroup();
+      const clickedStyle = { color: '#ea7912' };
+      let geoJson = L.geoJson();
+      let prevClickedLayerId;
 
       //Restore object id from model
       self.setCurrentObjectId(mapData.map_object_id);
@@ -40,7 +45,7 @@ export default Ember.Controller.extend({
         }
       })
         .on('click', () => {
-          self.closeObjectDescription(currentMapObject, featureGroup, defaultStyle);
+          self.closeObjectDescription(currentMapObject, geoJson, defaultStyle, prevClickedLayerId);
         });
 
       // Get map objects
@@ -48,27 +53,23 @@ export default Ember.Controller.extend({
         url: "/geo-objects",
 
         success(geoObjects) {
-          let prevClickedLayerId;
-          let layerFromModel;
 
-          const geoJson = L.geoJson(geoObjects.data[0].attributes.features, {
+          geoJson = L.geoJson(geoObjects.data[0].attributes.features, {
             nonBubblingEvents: ['click', 'mouseover', 'mouseout'],
             style() {
               return defaultStyle;
             },
 
             onEachFeature(feature, layer) {
-              featureGroup.addLayer(layer);
+              layer.checked = false;
+
               // Open sidebar if object id passed by url
               if (mapData.map_object_id && (parseInt(mapData.map_object_id) === parseInt(feature.properties.id))) {
                 self.openObjectDescription(feature);
-                layer.setStyle({ 
-                  color: '#ea7912',
-                  weight: 3
-                });
+                layer.setStyle(clickedStyle);
+                // Set labels to checked
                 layer.checked = true;
-                prevClickedLayerId = 'from model';
-                layerFromModel = layer;
+                prevClickedLayerId = geoJson.getLayerId(layer);
               }
 
               layer.on('click', function() {
@@ -78,23 +79,20 @@ export default Ember.Controller.extend({
 
                 if (!layer.checked) {
                   if (prevClickedLayerId) {
-                    if (prevClickedLayerId === 'from model') {
-                      geoJson.resetStyle(layerFromModel);
-                    } else {
-                      // Unset prev checked object style
-                      geoJson.getLayer(prevClickedLayerId).setStyle(defaultStyle);
-                      geoJson.getLayer(prevClickedLayerId).checked = false;
-                    }
+                    geoJson.getLayer(prevClickedLayerId).setStyle(defaultStyle);
+                    geoJson.getLayer(prevClickedLayerId).checked = false;
                   }
 
-                  layer.setStyle({ 
-                    color: '#ea7912',
-                    weight: 5
-                  });
+                  layer.setStyle(clickedStyle);
                   layer.checked = true;
                   prevClickedLayerId = geoJson.getLayerId(layer);
                 } else {
-                  self.closeObjectDescription(currentMapObject, featureGroup, defaultStyle);
+                  if (prevClickedLayerId) {
+                    // Unset prev checked object style
+                    geoJson.getLayer(prevClickedLayerId).setStyle(defaultStyle);
+                    geoJson.getLayer(prevClickedLayerId).checked = false;
+                  }
+                  self.closeObjectDescription(currentMapObject, geoJson, defaultStyle);
                   layer.checked = false;
                 }
               })
@@ -123,7 +121,7 @@ export default Ember.Controller.extend({
     },
   },
 
-  closeObjectDescription(map, featureGroup, defaultStyle) {
+  closeObjectDescription(map, geoJson, defaultStyle, prevObjectId) {
     'use strict';
 
     const $mapObjectDescription = Ember.$('.map-object-description');
@@ -146,7 +144,10 @@ export default Ember.Controller.extend({
     this.setUrl(map.getCenter(), map.getZoom());
     // Unset object id
     this.setCurrentObjectId(undefined);
-    featureGroup.setStyle(defaultStyle);
+    geoJson.setStyle(defaultStyle);
+    if (prevObjectId) {
+      geoJson.getLayer(prevObjectId).checked = false;
+    }
   },
 
   setCurrentObjectId(value) {
@@ -181,6 +182,10 @@ export default Ember.Controller.extend({
         '<div class="map-object-description__field">' + convertedObject[key] + '</div>';
     }
 
+    if (str === '') {
+      str = 'No description is provided';
+    }
+
     Ember.$('.map-object-description')
       .addClass('map-object-description--open')
       .find('.map-object-description__inner')
@@ -212,7 +217,7 @@ export default Ember.Controller.extend({
       if (dictionary[key]) {
         convertedObject[dictionary[key]] = objectTags[key];
       }
-    };
+    }
     return convertedObject;
   }
 
