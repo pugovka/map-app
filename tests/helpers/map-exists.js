@@ -7,7 +7,7 @@ export default Ember.Test.registerHelper('mapExists', function(app, container, c
   const map = L.map(htmlContainer);
   map.setView(L.latLng(coordinates.lat, coordinates.lng));
 
-  if (!!map) {
+  if (map) {
     return true;
   }
   return false;
